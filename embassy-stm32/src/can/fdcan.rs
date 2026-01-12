@@ -408,7 +408,7 @@ impl<'d> Can<'d> {
 }
 
 /// User supplied buffer for RX Buffering
-pub type RxBuf<const BUF_SIZE: usize> = Channel<CriticalSectionRawMutex, ENVELOPE, BUF_SIZE>;
+pub type RxBuf<const BUF_SIZE: usize> = Channel<CriticalSectionRawMutex, Envelope, BUF_SIZE>;
 
 /// User supplied buffer for TX buffering
 pub type TxBuf<const BUF_SIZE: usize> = Channel<CriticalSectionRawMutex, Frame, BUF_SIZE>;
@@ -834,18 +834,15 @@ impl Properties {
         self.info.regs.regs.ecr().read().tec()
     }
 
-    /// Get the current bus error mode
-    pub fn bus_error_mode(&self) -> BusErrorMode {
+    /// Get the current bus error mode, and last detected bus error
+    pub fn bus_error_mode(&self) -> Result<(BusErrorMode, BusError), ()> {
         // This read will clear LEC and DLEC. This is not ideal, but protocol
         // error reporting in this driver should have a big ol' FIXME on it
         // anyway!
-        let psr = self.info.regs.regs.psr().read();
-        match (psr.bo(), psr.ep()) {
-            (false, false) => BusErrorMode::ErrorActive,
-            (false, true) => BusErrorMode::ErrorPassive,
-            (true, _) => BusErrorMode::BusOff,
-        }
+        self.info.regs.curr_error()
     }
+
+
 }
 
 struct State {

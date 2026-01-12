@@ -100,7 +100,7 @@ impl Registers {
 
     fn reg_to_error(value: u8) -> Result<BusError, ()> {
         match value {
-            0b000 => Ok(BusError::None),
+            0b000 => Ok(BusError::NoError),
             0b001 => Ok(BusError::Stuff),
             0b010 => Ok(BusError::Form),
             0b011 => Ok(BusError::Acknowledge),
@@ -112,19 +112,23 @@ impl Registers {
         }
     }
 
-    pub fn curr_error(&self) -> Result<BusError, ()> {
-        let err = { self.regs.psr().read() };
+    /// Reads psr and returns current error mode and error code
+    pub fn curr_error(&self) -> Result<(BusErrorMode, BusError), ()> {
+        let psr = { self.regs.psr().read() };
         cfg_if! {
             if #[cfg(can_fdcan_h7)] {
-                let lec = err.lec();
+                let lec = psr.lec();
             } else {
-                let lec = err.lec().to_bits();
+                let lec = psr.lec().to_bits();
             }
         }
         if let Ok(err) = Self::reg_to_error(lec) {
-            
-            return Ok(err);
-        }
+            return match (psr.bo(), psr.ep()) {
+            (false, false) => Ok((BusErrorMode::ErrorActive, err)),
+            (false, true) => Ok((BusErrorMode::ErrorPassive, err)),
+            (true, _) => Ok((BusErrorMode::BusOff, err)),
+            };
+        } 
         Err(())
     }
 
