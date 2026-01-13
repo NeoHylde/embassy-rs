@@ -130,7 +130,7 @@ impl Registers {
     }
 
     pub fn get_bus_state(&self) -> BusErrorMode {
-        let psr = { self.regs.psr.read() };
+        let psr = { self.regs.psr().read() };
         match (psr.bo(), psr.ep()) {
             (false, false) => BusErrorMode::ErrorActive,
             (false, true) => BusErrorMode::ErrorPassive,
