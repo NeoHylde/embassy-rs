@@ -841,13 +841,9 @@ impl Properties {
 
     /// Order of calling matters, CAN Controller clears LEC to 111,
     /// so calling bus_error_mode, then get_last_error returns 111 instead of actual error
-    pub fn get_last_error(&self) -> BusError {
+    pub fn get_last_error(&self) -> Option<BusError> {
         self.info.regs.get_last_error()
     }
-
-
-
-
 }
 
 struct State {
