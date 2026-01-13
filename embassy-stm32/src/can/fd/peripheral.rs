@@ -98,22 +98,22 @@ impl Registers {
         self.regs.txbar().modify(|w| w.set_ar(bufidx, true));
     }
 
-    fn reg_to_error(value: u8) -> Result<BusError, ()> {
+    fn reg_to_error(value: u8) -> Option<BusError> {
         match value {
-            0b000 => Ok(BusError::NoError),
-            0b001 => Ok(BusError::Stuff),
-            0b010 => Ok(BusError::Form),
-            0b011 => Ok(BusError::Acknowledge),
-            0b100 => Ok(BusError::BitRecessive),
-            0b101 => Ok(BusError::BitDominant),
-            0b110 => Ok(BusError::Crc),
-            0b111 => Ok(BusError::NoChange),
-            _ => Err(()),
+            0b000 => Some(BusError::NoError),
+            0b001 => Some(BusError::Stuff),
+            0b010 => Some(BusError::Form),
+            0b011 => Some(BusError::Acknowledge),
+            0b100 => Some(BusError::BitRecessive),
+            0b101 => Some(BusError::BitDominant),
+            0b110 => Some(BusError::Crc),
+            0b111 => Some(BusError::NoChange),
+            _ => None,
         }
     }
 
     /// Reads psr and returns current error mode and error code
-    pub fn curr_error(&self) -> Result<(BusErrorMode, BusError), ()> {
+    pub fn get_last_error(&self) -> Option<BusError> {
         let psr = { self.regs.psr().read() };
         cfg_if! {
             if #[cfg(can_fdcan_h7)] {
@@ -122,14 +122,20 @@ impl Registers {
                 let lec = psr.lec().to_bits();
             }
         }
-        if let Ok(err) = Self::reg_to_error(lec) {
-            return match (psr.bo(), psr.ep()) {
-                (false, false) => Ok((BusErrorMode::ErrorActive, err)),
-                (false, true) => Ok((BusErrorMode::ErrorPassive, err)),
-                (true, _) => Ok((BusErrorMode::BusOff, err)),
-            };
+        if let Some(err) = Self::reg_to_error(lec) {
+            Some(err)
+        } else {
+            None
         }
-        Err(())
+    }
+
+    pub fn get_bus_state(&self) -> BusErrorMode {
+        let psr = { self.regs.psr.read() };
+        match (psr.bo(), psr.ep()) {
+            (false, false) => BusErrorMode::ErrorActive,
+            (false, true) => BusErrorMode::ErrorPassive,
+            (true, _) => BusError::BusOff,
+        }
     }
 
     /// Returns if the tx queue is able to accept new messages without having to cancel an existing one

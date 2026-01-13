@@ -835,12 +835,17 @@ impl Properties {
     }
 
     /// Get the current bus error mode, and last detected bus error
-    pub fn bus_error_mode(&self) -> Result<(BusErrorMode, BusError), ()> {
-        // This read will clear LEC and DLEC. This is not ideal, but protocol
-        // error reporting in this driver should have a big ol' FIXME on it
-        // anyway!
-        self.info.regs.curr_error()
+    pub fn bus_error_mode(&self) -> BusErrorMode {
+        self.info.regs.get_bus_state()
     }
+
+    /// Order of calling matters, CAN Controller clears LEC to 111,
+    /// so calling bus_error_mode, then get_last_error returns 111 instead of actual error
+    pub fn get_last_error(&self) -> BusError {
+        self.info.regs.get_last_error()
+    }
+
+
 
 
 }
