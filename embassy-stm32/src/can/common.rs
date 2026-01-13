@@ -11,7 +11,6 @@ pub(crate) struct ClassicBufferedTxInner {
 }
 
 #[cfg(any(can_fdcan_v1, can_fdcan_h7))]
-
 pub(crate) struct FdBufferedRxInner {
     pub rx_sender: SendDynamicSender<'static, FdEnvelope>,
 }
