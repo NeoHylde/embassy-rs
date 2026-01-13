@@ -134,7 +134,7 @@ impl Registers {
         match (psr.bo(), psr.ep()) {
             (false, false) => BusErrorMode::ErrorActive,
             (false, true) => BusErrorMode::ErrorPassive,
-            (true, _) => BusError::BusOff,
+            (true, _) => BusErrorMode::BusOff,
         }
     }
 
